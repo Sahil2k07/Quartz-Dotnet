@@ -1,0 +1,6 @@
+@Quartz_DOTNET_HostAddress = http://localhost:5077
+
+GET {{Quartz_DOTNET_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
