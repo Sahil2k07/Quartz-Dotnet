@@ -1,6 +1,7 @@
 using DotNetEnv;
 using Quartz;
 using quartz.db;
+using quartz.enums;
 using quartz.services;
 
 Env.Load();
@@ -12,26 +13,18 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<QuartzDbContext>();
-builder.Services.AddScoped<CapacityUpdateService>();
+builder.Services.AddScoped<ProductionCapacityUpdateService>();
 
 builder.Services.AddQuartz(q =>
 {
-    q.UseMicrosoftDependencyInjectionJobFactory();
-
-    var jobKey = new JobKey("CapacityUpdateJob", "DefaultGroup");
-    q.AddJob<CapacityUpdateService>(opts => opts.WithIdentity(jobKey));
-
-    using var scope = builder.Services.BuildServiceProvider().CreateScope();
-    var service = scope.ServiceProvider.GetRequiredService<CapacityUpdateService>();
-    var nextRunTime = service.FetchTriggerStartTime();
-
-    DateTimeOffset triggerStartTime = new DateTimeOffset(nextRunTime);
+    var jobKey = new JobKey(QuartzJobs.ProductionCapacityUpdate.ToString());
+    q.AddJob<ProductionCapacityUpdateService>(opts => opts.WithIdentity(jobKey));
 
     q.AddTrigger(opts =>
         opts.ForJob(jobKey)
-            .WithIdentity("CapacityUpdateJob", "DefaultGroup")
-            .StartAt(triggerStartTime)
-            .WithSimpleSchedule(x => x.WithIntervalInMinutes(1).RepeatForever())
+            .WithIdentity(QuartzJobs.ProductionCapacityUpdate.ToString())
+            // .WithCronSchedule("0 0 0 * * ?")
+            .WithCronSchedule("0 * * * * ?")
     );
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
